@@ -20,6 +20,7 @@ let right
 let loop
 let goingLeft = false
 let goingRight = true
+let deadprev = 0
 let deadarr = []
 //fill board with arrays to make it 2d
 for (let row = 0; row < board.length; row++) {
@@ -27,6 +28,9 @@ for (let row = 0; row < board.length; row++) {
   for (let col = 0; col < board[row].length; col++) {
     board[row][col] = empty
   }
+}
+const sleep = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 const moveBlock = () => {
   render()
@@ -73,10 +77,13 @@ const render = () => {
       try { down = board[row + 1][col] } catch (e) { down = empty }
       try { left = board[row][col - 1] } catch (e) { left = empty }
       try { right = board[row][col + 1] } catch (e) { right = empty }
-      if(up && down && left && right == empty){
+      if (up && down && left && right == empty) {
         board[row][col] == empty
       }
       let sqr = paper.rect(innerWidth / 2 + col * 40, 50 + row * 40, 35, 35)
+        .hover(() => {
+          sqr.attr({ fill: "black" })
+        })
       if (board[row][col] == full) {
         sqr.attr({ fill: "black" })
       }
@@ -85,13 +92,44 @@ const render = () => {
 }
 const start = () => {
   render()
-  loop = setInterval(moveBlock, 150)
+  loop = setInterval(moveBlock, currentRow * 12)
 }
 const setb = (row, col, val) => {
   //!typeof
   if (typeof (board[row][col]) != "undefined") {
     board[row][col] = val
   }
+}
+const blink = () => {
+  clearInterval(loop)
+  for (item of deadarr) {
+    if (!item.includes(true)) {
+      let row = item[0]
+      let col = item[1]
+      setb(row, col, empty)
+    }
+  }
+  render()
+  setTimeout(() => {
+    for (item of deadarr) {
+      if (!item.includes(true)) {
+        let row = item[0]
+        let col = item[1]
+        setb(row, col, full)
+      }
+    }
+    render()
+  }, 400)
+  setTimeout(() => {
+    for (item of deadarr) {
+      if (!item.includes(true)) {
+        let row = item[0]
+        let col = item[1]
+        setb(row, col, empty)
+      }
+    }
+  }, 400)
+  render()
 }
 //function for pressing space
 
@@ -104,12 +142,13 @@ onkeydown = (e) => {
           console.log("most left cell " + board[currentRow][leftOffset] + " should be 1")
           if (board[currentRow + 1][leftOffset] == empty) {
             setb(currentRow, leftOffset, empty)
-            deadarr.push([currentRow, leftOffset])
             // board[currentRow][leftOffset] = empty
             if (currentBlockSize < 1) {
               currentBlockSize = 0
               currentlyPlaying = false
             } else {
+              console.log("left deleted")
+              deadarr.push([currentRow, leftOffset])
               currentBlockSize--
             }
           }
@@ -122,11 +161,16 @@ onkeydown = (e) => {
               console.log(board[currentRow][leftOffset + 2])
               setb(currentRow, leftOffset + 2, empty)
               deadarr.push([currentRow, leftOffset + 2])
+              console.log("middle deleted")
               currentBlockSize--
             }
             if (currentBlockSize < 1) {
               currentBlockSize = 0
-            } else {
+            } else if (blockSizeBefore != 3) {
+              console.log("right deleted")
+              currentBlockSize--
+            }else{
+              console.log("right deleted 2")
               currentBlockSize--
             }
           }
@@ -134,11 +178,25 @@ onkeydown = (e) => {
         currentRow -= 1;
         if (currentRow == -1) {
           console.log("you won")
-          clearInterval(x)
+          clearInterval(loop)
         }
+        clearInterval(loop)
+        loop = setInterval(moveBlock,currentRow * 11.5)
         console.log(board)
         document.getElementById("test").innerText = currentRow
       }
     }
+  }
+  if (deadarr.length > deadprev) {
+    deadprev = deadarr.length
+    console.log("deadarr")
+    blink()
+    setTimeout(blink, 800)
+    setTimeout(() => {
+      for (item of deadarr) {
+        item.push(true)
+      }
+    }, 1500)
+    setTimeout(start, 1600)
   }
 }
