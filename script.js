@@ -1,4 +1,4 @@
-let paper = Raphael(0, 0, innerWidth, innerHeight)
+let paper = Raphael(-150, 0, innerWidth, innerHeight)
 //var for empty
 let empty = 0
 let full = 1
@@ -22,6 +22,13 @@ let goingLeft = false
 let goingRight = true
 let deadprev = 0
 let deadarr = []
+let os = navigator.platform
+let renderSize = 35
+let mult = 40
+if(os == "MacIntel"){
+  mult = 35
+  renderSize = 30
+}
 //fill board with arrays to make it 2d
 for (let row = 0; row < board.length; row++) {
   board[row] = new Array(7)
@@ -29,9 +36,7 @@ for (let row = 0; row < board.length; row++) {
     board[row][col] = empty
   }
 }
-const sleep = (ms) => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+
 const moveBlock = () => {
   render()
   if (currentBlockSize == 0) {
@@ -80,10 +85,7 @@ const render = () => {
       if (up && down && left && right == empty) {
         board[row][col] == empty
       }
-      let sqr = paper.rect(innerWidth / 2 + col * 40, 50 + row * 40, 35, 35)
-        .hover(() => {
-          sqr.attr({ fill: "black" })
-        })
+      let sqr = paper.rect(innerWidth / 2 + col * mult, 50 + row * mult, renderSize, renderSize)
       if (board[row][col] == full) {
         sqr.attr({ fill: "black" })
       }
@@ -132,62 +134,64 @@ const blink = () => {
   render()
 }
 //function for pressing space
-
-onkeydown = (e) => {
+const moveUp = () => {
   if (currentlyPlaying) {
-    if (e.key.toLowerCase() == " ") {
-      if (currentRow >= 0) {
-        if (currentRow < 19) {
-          blockSizeBefore = currentBlockSize
-          console.log("most left cell " + board[currentRow][leftOffset] + " should be 1")
-          if (board[currentRow + 1][leftOffset] == empty) {
-            setb(currentRow, leftOffset, empty)
-            // board[currentRow][leftOffset] = empty
-            if (currentBlockSize < 1) {
-              currentBlockSize = 0
-              currentlyPlaying = false
-            } else {
-              console.log("left deleted")
-              deadarr.push([currentRow, leftOffset])
-              currentBlockSize--
-            }
-          }
-          console.log("most right cell " + board[currentRow][leftOffset + currentBlockSize - 1] + " should be 1")
-          if (board[currentRow + 1][leftOffset + currentBlockSize - 1] == empty) {
-            setb(currentRow, leftOffset + currentBlockSize - 1, empty)
-            deadarr.push([currentRow, leftOffset + currentBlockSize - 1])
-            // board[currentRow][leftOffset + currentBlockSize] = empty
-            if (blockSizeBefore == 3) {
-              console.log(board[currentRow][leftOffset + 2])
-              setb(currentRow, leftOffset + 2, empty)
-              deadarr.push([currentRow, leftOffset + 2])
-              console.log("middle deleted")
-              currentBlockSize--
-            }
-            if (currentBlockSize < 1) {
-              currentBlockSize = 0
-            } else if (blockSizeBefore != 3) {
-              console.log("right deleted")
-              currentBlockSize--
-            }else{
-              console.log("right deleted 2")
-              currentBlockSize--
-            }
+    if (currentRow >= 0) {
+      if (currentRow < 19) {
+        if (currentRow == 12 && currentBlockSize == 3) {
+          currentBlockSize = 2
+        }
+        blockSizeBefore = currentBlockSize
+        console.log("most left cell " + board[currentRow][leftOffset] + " should be 1 " + "row: " + currentRow + " col: " + leftOffset)
+        if (board[currentRow + 1][leftOffset] == empty) {
+          setb(currentRow, leftOffset, empty)
+          // board[currentRow][leftOffset] = empty
+          if (currentBlockSize < 1) {
+            currentBlockSize = 0
+            currentlyPlaying = false
+          } else {
+            console.log("left deleted")
+            deadarr.push([currentRow, leftOffset])
+            leftOffset++
+            currentBlockSize--
           }
         }
-        currentRow -= 1;
-        if (currentRow == -1) {
-          console.log("you won")
-          clearInterval(loop)
+        console.log("most right cell " + board[currentRow][leftOffset + currentBlockSize - 1] + " should be 1, row: " + currentRow + ", col: " + (leftOffset + currentBlockSize-1))
+        if (board[currentRow + 1][leftOffset + currentBlockSize - 1] == empty) {
+          setb(currentRow, leftOffset + currentBlockSize - 1, empty)
+          deadarr.push([currentRow, leftOffset + currentBlockSize - 1])
+          // board[currentRow][leftOffset + currentBlockSize] = empty
+          if (blockSizeBefore == 3) {
+            console.log(board[currentRow][leftOffset + 2])
+            setb(currentRow, leftOffset + 2, empty)
+            deadarr.push([currentRow, leftOffset + 2])
+            console.log("middle deleted")
+            currentBlockSize--
+          }
+          if (currentBlockSize < 1) {
+            currentBlockSize = 0
+          } else if (blockSizeBefore != 3) {
+            console.log("right deleted")
+            currentBlockSize--
+          } else {
+            console.log("right deleted 2")
+            currentBlockSize--
+          }
         }
-        clearInterval(loop)
-        loop = setInterval(moveBlock,currentRow * 11.5)
-        console.log(board)
-        document.getElementById("test").innerText = currentRow
       }
+      currentRow -= 1;
+      if (currentRow == -1) {
+        console.log("you won")
+        clearInterval(loop)
+      }
+      clearInterval(loop)
+      loop = setInterval(moveBlock, currentRow * 11.5)
+      console.log(board)
+      document.getElementById("test").innerText = currentRow
     }
   }
   if (deadarr.length > deadprev) {
+
     deadprev = deadarr.length
     console.log("deadarr")
     blink()
@@ -200,3 +204,12 @@ onkeydown = (e) => {
     setTimeout(start, 1600)
   }
 }
+onkeydown = (e) => {
+  if (e.key.toLowerCase() == " ") {
+    moveUp()
+  }
+}
+onclick = () => {
+  moveUp()
+}
+start()
